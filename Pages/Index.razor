@@ -1,0 +1,153 @@
+﻿@using Microsoft.Identity.Abstractions;
+@using Microsoft.Identity.Web;
+@using System.Text.Json
+@inject IDownstreamApi downstreamApi
+@inject MicrosoftIdentityConsentAndConditionalAccessHandler ConsentHandler
+
+@page "/"
+
+<PageTitle>Demo autenticação/autorização microsoft entra id</PageTitle>
+
+
+@* Define o que e mostrado quando autorizado *@
+<AuthorizeView>
+  <Authorized>
+    @if (graphApiResponse != null)
+    {
+      <h1>Bem vindo Usuário @graphApiResponse.RootElement.GetProperty("displayName").GetString()</h1>
+    }
+
+    @if (graphApiTenantResponse != null)
+    {
+      <h2>Informações do Tenant</h2>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Nome</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var group in graphApiTenantResponse.RootElement.GetProperty("value").EnumerateArray())
+          {
+            <tr>
+              <td>@group.GetProperty("id").GetString()</td>
+              <td>@group.GetProperty("displayName").GetString()</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+    }
+
+    @if (graphApiGroupResponse != null)
+    {
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Grupo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var group in graphApiGroupResponse.RootElement.GetProperty("value").EnumerateArray())
+          {
+            <tr>
+              <td>@group.GetProperty("id").GetString()</td>
+              <td>@group.GetProperty("displayName").GetString()</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    @if (graphApiUsersResponse != null)
+    {
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Usuário</th>
+            <th>E-mail</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var user in graphApiUsersResponse.RootElement.GetProperty("value").EnumerateArray())
+          {
+            <tr>
+              <td>@user.GetProperty("id").GetString()</td>
+              <td>@user.GetProperty("displayName").GetString()</td>
+              <td>@user.GetProperty("mail").GetString()</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    @code {
+      private JsonDocument graphApiResponse = null;
+      private JsonDocument graphApiGroupResponse = null;
+      private JsonDocument graphApiUsersResponse = null;
+      private JsonDocument graphApiTenantResponse = null;
+
+      protected override async Task OnInitializedAsync()
+      {
+        try
+        {
+          //obtem dadsos do usuário logado
+          using var response = await downstreamApi.CallApiForUserAsync("GraphApi").ConfigureAwait(continueOnCapturedContext:
+          false);
+          response.EnsureSuccessStatusCode();
+          graphApiResponse = await response.Content.ReadFromJsonAsync<JsonDocument>().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          ConsentHandler.HandleException(ex);
+        }
+
+        try
+        {
+          //obtem dados dos grupos do usuário logado
+          using var response = await
+          downstreamApi.CallApiForUserAsync("GraphApiGroup").ConfigureAwait(continueOnCapturedContext: false);
+          response.EnsureSuccessStatusCode();
+          graphApiGroupResponse = await response.Content.ReadFromJsonAsync<JsonDocument>().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          ConsentHandler.HandleException(ex);
+        }
+
+        try
+        {
+          //obtem dados dos usuários do tenant
+          using var response = await
+          downstreamApi.CallApiForUserAsync("GraphApiUsers").ConfigureAwait(continueOnCapturedContext: false);
+          response.EnsureSuccessStatusCode();
+          graphApiUsersResponse = await response.Content.ReadFromJsonAsync<JsonDocument>().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          ConsentHandler.HandleException(ex);
+        }
+
+        try
+        {
+          //obtem dados do tenant
+          using var response = await
+          downstreamApi.CallApiForUserAsync("GraphApiTenant").ConfigureAwait(continueOnCapturedContext: false);
+          response.EnsureSuccessStatusCode();
+          graphApiTenantResponse = await response.Content.ReadFromJsonAsync<JsonDocument>().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          ConsentHandler.HandleException(ex);
+        }
+
+        /* Aqui seriam os dados do auditlogs para obter os logins recentes mas na minha conta elee nao funcionou , por isso nao deu para colocar em teste*/
+      }
+    }
+  </Authorized>
+</AuthorizeView>
