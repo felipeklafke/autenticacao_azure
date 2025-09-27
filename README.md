@@ -23,3 +23,7 @@
 ## Por fim
 
 Basta executar o projeto recuperado do github na sua máquina utilizando o comando "dotnet run"
+
+## Aplicação funcionando
+
+![Funcionando](images/funcionando.png)
